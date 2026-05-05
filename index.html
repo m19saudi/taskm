@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>taskm.</title>
+    <style>
+        :root {
+            /* Dark Mode (Default) */
+            --bg: #000000;
+            --surface: rgba(28, 28, 30, 0.7);
+            --text-main: #ffffff;
+            --text-dim: #8e8e93;
+            --accent: #0a84ff;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass: blur(25px) saturate(180%);
+        }
+
+        [data-theme="light"] {
+            --bg: #f2f2f7;
+            --surface: rgba(255, 255, 255, 0.8);
+            --text-main: #000000;
+            --text-dim: #636366;
+            --accent: #007aff;
+            --border: rgba(0, 0, 0, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; }
+        
+        body { 
+            background: var(--bg); 
+            color: var(--text-main); 
+            min-height: 100vh; 
+            transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: hidden;
+        }
+
+        /* --- Header & Branding --- */
+        header {
+            position: sticky; top: 0; z-index: 1000;
+            padding: 20px; background: var(--bg);
+            backdrop-filter: var(--glass);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .logo { font-weight: 800; font-size: 26px; letter-spacing: -1.5px; color: var(--text-main); }
+        
+        .controls { display: flex; gap: 12px; align-items: center; }
+        
+        .mode-btn {
+            background: var(--surface); border: 1px solid var(--border);
+            padding: 8px 16px; border-radius: 20px; font-size: 13px;
+            color: var(--text-main); cursor: pointer; backdrop-filter: var(--glass);
+        }
+
+        /* --- View Switcher --- */
+        .tabs {
+            display: flex; background: var(--surface);
+            margin: 10px 20px; padding: 4px; border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .tab-btn {
+            flex: 1; padding: 8px; border: none; background: transparent;
+            color: var(--text-dim); font-weight: 600; font-size: 13px;
+            cursor: pointer; border-radius: 8px; transition: 0.2s;
+        }
+        .tab-btn.active { background: var(--accent); color: white; }
+
+        /* --- Calendar Module --- */
+        .calendar-wrap { padding: 0 20px; animation: slideIn 0.4s ease; }
+        .cal-header { display: flex; justify-content: space-between; padding: 10px 0; font-weight: 600; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+        .cal-day {
+            aspect-ratio: 1; background: var(--surface); border-radius: 14px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px solid var(--border); cursor: pointer; transition: 0.2s;
+        }
+        .cal-day.active { border-color: var(--accent); background: rgba(10, 132, 255, 0.1); }
+        .cal-day.today { color: var(--accent); font-weight: 800; }
+        .dot { width: 4px; height: 4px; background: var(--accent); border-radius: 50%; margin-top: 4px; }
+
+        /* --- Task Cards --- */
+        #contentArea { padding: 20px; padding-bottom: 120px; }
+        .task-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 22px; padding: 18px; margin-bottom: 15px;
+            transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            backdrop-filter: var(--glass);
+        }
+        .main-row { display: flex; align-items: center; gap: 15px; }
+        .urgency { font-family: monospace; font-weight: 900; cursor: pointer; min-width: 45px; font-size: 18px; }
+        .u1 { color: #32d74b; opacity: 0.5; }
+        .u2 { color: #ffd60a; opacity: 0.8; }
+        .u3 { color: #ff375f; text-shadow: 0 0 10px rgba(255,55,95,0.4); }
+
+        .title-input { background: transparent; border: none; color: var(--text-main); font-size: 17px; width: 100%; outline: none; font-weight: 500; }
+        
+        .desc-area { 
+            max-height: 0; overflow: hidden; transition: 0.3s; 
+            border-top: 0px solid var(--border); margin-top: 0;
+        }
+        .desc-area.open { max-height: 200px; margin-top: 15px; padding-top: 15px; border-top-width: 1px; }
+        textarea { width: 100%; background: transparent; border: none; color: var(--text-dim); font-size: 14px; resize: none; outline: none; line-height: 1.5; }
+
+        /* --- Floating Button --- */
+        .fab {
+            position: fixed; bottom: 40px; right: 30px;
+            width: 64px; height: 64px; background: var(--accent);
+            color: white; border: none; border-radius: 32px;
+            font-size: 32px; cursor: pointer; box-shadow: 0 12px 24px rgba(10, 132, 255, 0.3);
+            z-index: 2000; transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.9); }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <header>
+        <div class="logo">taskm.</div>
+        <div class="controls">
+            <select id="mainFilter" class="mode-btn" onchange="render()">
+                <option value="all">All Focus</option>
+                <option value="now">Priority: Now</option>
+                <option value="dueSoon">Due Soon</option>
+                <option value="completed">Archive</option>
+            </select>
+            <button class="mode-btn" onclick="toggleTheme()">🌓</button>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" id="listTab" onclick="switchTab('list')">Tasks</button>
+        <button class="tab-btn" id="calTab" onclick="switchTab('cal')">Calendar</button>
+    </div>
+
+    <div id="contentArea"></div>
+
+    <button class="fab" onclick="addTask()">+</button>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('taskm_ultimate')) || [];
+        let currentTab = 'list';
+        let selectedDate = new Date().toISOString().split('T')[0];
+
+        function sync() { localStorage.setItem('taskm_ultimate', JSON.stringify(db)); }
+
+        function toggleTheme() {
+            const b = document.body;
+            b.dataset.theme = b.dataset.theme === 'dark' ? 'light' : 'dark';
+        }
+
+        function switchTab(t) {
+            currentTab = t;
+            document.getElementById('listTab').classList.toggle('active', t === 'list');
+            document.getElementById('calTab').classList.toggle('active', t === 'cal');
+            render();
+        }
+
+        function addTask() {
+            const task = {
+                id: Date.now(), title: "New Objective", desc: "", 
+                urgency: 1, date: selectedDate, done: false, open: false
+            };
+            db.unshift(task);
+            render();
+            sync();
+        }
+
+        function render() {
+            const container = document.getElementById('contentArea');
+            container.innerHTML = '';
+
+            if (currentTab === 'cal') {
+                const calDiv = document.createElement('div');
+                calDiv.className = 'calendar-wrap';
+                
+                // Calendar Logic
+                const today = new Date();
+                const monthName = today.toLocaleString('default', { month: 'long' });
+                calDiv.innerHTML = `<div class="cal-header"><span>${monthName}</span> <span>${today.getFullYear()}</span></div>`;
+                
+                const grid = document.createElement('div');
+                grid.className = 'cal-grid';
+
+                for(let i = -7; i < 21; i++) {
+                    const d = new Date();
+                    d.setDate(today.getDate() + i);
+                    const dStr = d.toISOString().split('T')[0];
+                    const hasTask = db.find(t => t.date === dStr && !t.done);
+                    
+                    const dayEl = document.createElement('div');
+                    dayEl.className = `cal-day ${dStr === selectedDate ? 'active' : ''} ${i === 0 ? 'today' : ''}`;
+                    dayEl.onclick = () => { selectedDate = dStr; render(); };
+                    dayEl.innerHTML = `<div>${d.getDate()}</div> ${hasTask ? '<div class="dot"></div>' : ''}`;
+                    grid.appendChild(dayEl);
+                }
+                calDiv.appendChild(grid);
+                container.appendChild(calDiv);
+
+                // Tasks for selected date below calendar
+                const dayTasks = db.filter(t => t.date === selectedDate);
+                renderTaskList(container, dayTasks, "Focus for " + selectedDate);
+
+            } else {
+                const filter = document.getElementById('mainFilter').value;
+                const filtered = db.filter(t => {
+                    if (filter === 'completed') return t.done;
+                    if (t.done) return false;
+                    if (filter === 'now') return t.urgency === 3;
+                    if (filter === 'dueSoon') {
+                        const diff = (new Date(t.date) - new Date()) / 86400000;
+                        return diff >= -1 && diff <= 5;
+                    }
+                    return true;
+                });
+                renderTaskList(container, filtered);
+            }
+        }
+
+        function renderTaskList(container, list, title = "") {
+            if(title) container.innerHTML += `<h3 style="margin: 25px 0 15px; font-size:14px; color:var(--text-dim)">${title}</h3>`;
+            
+            const listWrap = document.createElement('div');
+            list.forEach(t => {
+                const card = document.createElement('div');
+                card.className = `task-card ${t.done ? 'done' : ''}`;
+                card.innerHTML = `
+                    <div class="main-row">
+                        <div class="urgency u${t.urgency}" onclick="cycleU(${t.id})">${'>'.repeat(t.urgency)}</div>
+                        <div style="flex:1"><input class="title-input" value="${t.title}" onchange="upd(${t.id},'title',this.value)"></div>
+                        <div style="cursor:pointer; opacity:0.6" onclick="toggleD(${t.id})">💬</div>
+                        <div style="cursor:pointer; color:var(--accent)" onclick="finish(${t.id})">●</div>
+                    </div>
+                    <div class="desc-area ${t.open ? 'open' : ''}">
+                        <textarea placeholder="Description..." onchange="upd(${t.id},'desc',this.value)">${t.desc}</textarea>
+                        <input type="date" value="${t.date}" onchange="upd(${t.id},'date',this.value)" 
+                               style="background:transparent; color:var(--accent); border:none; font-size:12px; margin-top:10px">
+                    </div>
+                `;
+                listWrap.appendChild(card);
+            });
+            container.appendChild(listWrap);
+        }
+
+        function cycleU(id) {
+            const t = db.find(x => x.id === id);
+            t.urgency = t.urgency >= 3 ? 1 : t.urgency + 1;
+            sort(); render(); sync();
+        }
+
+        function finish(id) {
+            const t = db.find(x => x.id === id);
+            t.done = true;
+            render(); sync();
+        }
+
+        function toggleD(id) {
+            const t = db.find(x => x.id === id);
+            t.open = !t.open;
+            render();
+        }
+
+        function upd(id, f, v) {
+            db.find(x => x.id === id)[f] = v;
+            if(f === 'date') sort();
+            sync();
+            if(f === 'date') render();
+        }
+
+        function sort() {
+            db.sort((a,b) => (a.done - b.done) || (new Date(a.date) - new Date(b.date)) || (b.urgency - a.urgency));
+        }
+
+        sort(); render();
+    </script>
+</body>
+</html>
