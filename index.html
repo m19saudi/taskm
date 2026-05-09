@@ -7,12 +7,12 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M4.89 13.27l4.27 4.27L18.71 8' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
     <style>
         :root {
-            /* Dark Mode (Default) */
             --bg: #000000;
             --surface: rgba(28, 28, 30, 0.7);
             --text-main: #ffffff;
             --text-dim: #8e8e93;
             --accent: #0a84ff;
+            --danger: #ff453a;
             --border: rgba(255, 255, 255, 0.1);
             --glass: blur(25px) saturate(180%);
         }
@@ -23,97 +23,67 @@
             --text-main: #000000;
             --text-dim: #636366;
             --accent: #007aff;
+            --danger: #ff3b30;
             --border: rgba(0, 0, 0, 0.05);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; }
-        
-        body { 
-            background: var(--bg); 
-            color: var(--text-main); 
-            min-height: 100vh; 
-            transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow-x: hidden;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text-main); min-height: 100vh; transition: background 0.4s; overflow-x: hidden; }
 
-        /* --- Header & Branding --- */
-        header {
-            position: sticky; top: 0; z-index: 1000;
-            padding: 20px; background: var(--bg);
-            backdrop-filter: var(--glass);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .logo { font-weight: 800; font-size: 26px; letter-spacing: -1.5px; color: var(--text-main); }
+        header { position: sticky; top: 0; z-index: 1000; padding: 20px; background: var(--bg); backdrop-filter: var(--glass); display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-weight: 800; font-size: 26px; letter-spacing: -1.5px; }
         
-        .controls { display: flex; gap: 12px; align-items: center; }
-        
-        .mode-btn {
-            background: var(--surface); border: 1px solid var(--border);
-            padding: 8px 16px; border-radius: 20px; font-size: 13px;
-            color: var(--text-main); cursor: pointer; backdrop-filter: var(--glass);
-        }
+        .controls { display: flex; gap: 8px; align-items: center; }
+        .mode-btn { background: var(--surface); border: 1px solid var(--border); padding: 8px 12px; border-radius: 12px; color: var(--text-main); cursor: pointer; font-size: 13px; font-weight: 500; outline: none; }
 
-        /* --- View Switcher --- */
-        .tabs {
-            display: flex; background: var(--surface);
-            margin: 10px 20px; padding: 4px; border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-        .tab-btn {
-            flex: 1; padding: 8px; border: none; background: transparent;
-            color: var(--text-dim); font-weight: 600; font-size: 13px;
-            cursor: pointer; border-radius: 8px; transition: 0.2s;
-        }
+        .nav-section { display: flex; align-items: center; gap: 10px; margin: 0 20px 15px; }
+        .tab-container { flex: 1; position: relative; height: 44px; }
+        .tabs { display: flex; background: var(--surface); padding: 4px; border-radius: 12px; border: 1px solid var(--border); height: 100%; }
+        .tab-btn { flex: 1; padding: 5px; border: none; background: transparent; color: var(--text-dim); font-weight: 600; font-size: 11px; cursor: pointer; border-radius: 8px; text-transform: uppercase; }
         .tab-btn.active { background: var(--accent); color: white; }
 
-        /* --- Calendar Module --- */
-        .calendar-wrap { padding: 0 20px; animation: slideIn 0.4s ease; }
-        .cal-header { display: flex; justify-content: space-between; padding: 10px 0; font-weight: 600; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
-        .cal-day {
-            aspect-ratio: 1; background: var(--surface); border-radius: 14px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border: 1px solid var(--border); cursor: pointer; transition: 0.2s;
-        }
-        .cal-day.active { border-color: var(--accent); background: rgba(10, 132, 255, 0.1); }
-        .cal-day.today { color: var(--accent); font-weight: 800; }
-        .dot { width: 4px; height: 4px; background: var(--accent); border-radius: 50%; margin-top: 4px; }
+        .search-icon-btn { width: 44px; height: 44px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .search-icon-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
 
-        /* --- Task Cards --- */
-        #contentArea { padding: 20px; padding-bottom: 120px; }
-        .task-card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 22px; padding: 18px; margin-bottom: 15px;
-            transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-            backdrop-filter: var(--glass);
-        }
-        .main-row { display: flex; align-items: center; gap: 15px; }
-        .urgency { font-family: monospace; font-weight: 900; cursor: pointer; min-width: 45px; font-size: 18px; }
-        .u1 { color: #32d74b; opacity: 0.5; }
-        .u2 { color: #ffd60a; opacity: 0.8; }
-        .u3 { color: #ff375f; text-shadow: 0 0 10px rgba(255,55,95,0.4); }
+        .search-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--surface); border-radius: 12px; border: 1px solid var(--accent); display: none; align-items: center; padding: 0 12px; z-index: 10; }
+        .search-overlay.active { display: flex; }
+        .search-input { background: transparent; border: none; color: var(--text-main); width: 100%; outline: none; font-size: 14px; }
 
-        .title-input { background: transparent; border: none; color: var(--text-main); font-size: 17px; width: 100%; outline: none; font-weight: 500; }
+        .calendar-wrap { padding: 0 20px; }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-weight: 600; font-size: 16px; }
+        .cal-nav { cursor: pointer; padding: 8px 12px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px; }
+        .cal-day { aspect-ratio: 1; background: var(--surface); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); cursor: pointer; font-size: 13px; position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .cal-day:active { transform: scale(0.9); }
+        .cal-day.empty { background: transparent; border: none; cursor: default; }
+        .cal-day.active { border-color: var(--accent); background: var(--accent); color: white; transform: scale(1.05); z-index: 2; }
+        .cal-day.today:not(.active) { color: var(--accent); font-weight: 800; border: 1.5px solid var(--accent); }
+        .dot { position: absolute; bottom: 5px; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
+        .cal-day.active .dot { background: white; }
+
+        #contentArea { padding: 0 20px 120px; min-height: 200px; }
+        .group-title { margin: 20px 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent); font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
         
-        .desc-area { 
-            max-height: 0; overflow: hidden; transition: 0.3s; 
-            border-top: 0px solid var(--border); margin-top: 0;
-        }
-        .desc-area.open { max-height: 200px; margin-top: 15px; padding-top: 15px; border-top-width: 1px; }
-        textarea { width: 100%; background: transparent; border: none; color: var(--text-dim); font-size: 14px; resize: none; outline: none; line-height: 1.5; }
+        .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px; margin-bottom: 8px; backdrop-filter: var(--glass); animation: slideIn 0.2s ease; }
+        .task-card.done { opacity: 0.4; }
+        
+        .main-row { display: flex; align-items: center; gap: 12px; }
+        .urgency { font-family: monospace; font-weight: 900; cursor: pointer; min-width: 40px; font-size: 16px; text-align: center; }
+        .u1 { color: #32d74b; } .u2 { color: #ffd60a; } .u3 { color: #ff375f; }
 
-        /* --- Floating Button --- */
-        .fab {
-            position: fixed; bottom: 40px; right: 30px;
-            width: 64px; height: 64px; background: var(--accent);
-            color: white; border: none; border-radius: 32px;
-            font-size: 32px; cursor: pointer; box-shadow: 0 12px 24px rgba(10, 132, 255, 0.3);
-            z-index: 2000; transition: transform 0.2s;
-        }
-        .fab:active { transform: scale(0.9); }
+        .title-input { background: transparent; border: none; color: var(--text-main); font-size: 16px; width: 100%; outline: none; }
+        
+        .dot-btn { font-size: 18px; cursor: pointer; color: var(--accent); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+        .done-btn { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .done-btn::after { content: '✓'; color: white; font-size: 12px; font-weight: 900; }
 
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .desc-area { max-height: 0; overflow: hidden; transition: 0.3s; opacity: 0; }
+        .desc-area.open { max-height: 250px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); opacity: 1; }
+        
+        .date-input { background: rgba(10, 132, 255, 0.1); color: var(--accent); border: none; font-size: 11px; font-weight: 700; padding: 5px 8px; border-radius: 6px; outline: none; }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); color: white; border: none; border-radius: 50%; font-size: 30px; cursor: pointer; box-shadow: 0 8px 20px rgba(10, 132, 255, 0.3); z-index: 2000; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body data-theme="dark">
@@ -123,7 +93,8 @@
         <div class="controls">
             <select id="mainFilter" class="mode-btn" onchange="render()">
                 <option value="all">All Focus</option>
-                <option value="now">Priority: Now</option>
+                <option value="byDate">By Date</option>
+                <option value="now">Now</option>
                 <option value="dueSoon">Due Soon</option>
                 <option value="completed">Archive</option>
             </select>
@@ -131,25 +102,62 @@
         </div>
     </header>
 
-    <div class="tabs">
-        <button class="tab-btn active" id="listTab" onclick="switchTab('list')">Tasks</button>
-        <button class="tab-btn" id="calTab" onclick="switchTab('cal')">Calendar</button>
+    <div class="nav-section">
+        <div class="tab-container">
+            <div class="tabs" id="tabBar">
+                <button class="tab-btn active" id="listTab" onclick="switchTab('list')">Tasks</button>
+                <button class="tab-btn" id="calTab" onclick="switchTab('cal')">Calendar</button>
+            </div>
+            <div class="search-overlay" id="searchOverlay">
+                <input type="text" id="smartSearch" class="search-input" placeholder="Search objectives..." oninput="render()">
+                <span style="color:var(--text-dim); cursor:pointer;" onclick="toggleSearch()">✕</span>
+            </div>
+        </div>
+        <div class="search-icon-btn" id="searchToggleBtn" onclick="toggleSearch()">🔍</div>
     </div>
 
     <div id="contentArea"></div>
-
     <button class="fab" onclick="addTask()">+</button>
 
     <script>
         let db = JSON.parse(localStorage.getItem('taskm_ultimate')) || [];
+        db.forEach(t => t.open = false);
+
         let currentTab = 'list';
-        let selectedDate = new Date().toISOString().split('T')[0];
+        
+        const getLocalISO = (date = new Date()) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        const datesMatch = (d1, d2) => {
+            if(!d1 || !d2) return false;
+            return d1.toString() === d2.toString();
+        };
+
+        let selectedDate = getLocalISO();
+        let displayMonth = new Date().getMonth();
+        let displayYear = new Date().getFullYear();
 
         function sync() { localStorage.setItem('taskm_ultimate', JSON.stringify(db)); }
+        function toggleTheme() { document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark'; }
 
-        function toggleTheme() {
-            const b = document.body;
-            b.dataset.theme = b.dataset.theme === 'dark' ? 'light' : 'dark';
+        function toggleSearch() {
+            const overlay = document.getElementById('searchOverlay');
+            const btn = document.getElementById('searchToggleBtn');
+            const input = document.getElementById('smartSearch');
+            if (overlay.classList.contains('active')) {
+                overlay.classList.remove('active');
+                btn.classList.remove('active');
+                input.value = '';
+                render();
+            } else {
+                overlay.classList.add('active');
+                btn.classList.add('active');
+                input.focus();
+            }
         }
 
         function switchTab(t) {
@@ -159,14 +167,29 @@
             render();
         }
 
-        function addTask() {
-            const task = {
-                id: Date.now(), title: "New Objective", desc: "", 
-                urgency: 1, date: selectedDate, done: false, open: false
-            };
-            db.unshift(task);
+        function changeMonth(dir) {
+            displayMonth += dir;
+            if (displayMonth > 11) { displayMonth = 0; displayYear++; }
+            else if (displayMonth < 0) { displayMonth = 11; displayYear--; }
             render();
-            sync();
+        }
+
+        // IMPROVED: Update visual only for current selected day
+        function selectCalendarDate(e, dStr) {
+            e.preventDefault();
+            selectedDate = dStr;
+            
+            // Remove 'active' class from all days and add to clicked one
+            document.querySelectorAll('.cal-day').forEach(el => el.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+
+            // Refresh only the tasks below, not the whole calendar
+            renderTaskListOnly();
+        }
+
+        function addTask() {
+            db.unshift({ id: Date.now(), title: "", desc: "", urgency: 1, date: selectedDate, done: false, open: false });
+            render(); sync();
         }
 
         function render() {
@@ -174,107 +197,129 @@
             container.innerHTML = '';
 
             if (currentTab === 'cal') {
-                const calDiv = document.createElement('div');
-                calDiv.className = 'calendar-wrap';
-                
-                // Calendar Logic
-                const today = new Date();
-                const monthName = today.toLocaleString('default', { month: 'long' });
-                calDiv.innerHTML = `<div class="cal-header"><span>${monthName}</span> <span>${today.getFullYear()}</span></div>`;
-                
-                const grid = document.createElement('div');
-                grid.className = 'cal-grid';
-
-                for(let i = -7; i < 21; i++) {
-                    const d = new Date();
-                    d.setDate(today.getDate() + i);
-                    const dStr = d.toISOString().split('T')[0];
-                    const hasTask = db.find(t => t.date === dStr && !t.done);
-                    
-                    const dayEl = document.createElement('div');
-                    dayEl.className = `cal-day ${dStr === selectedDate ? 'active' : ''} ${i === 0 ? 'today' : ''}`;
-                    dayEl.onclick = () => { selectedDate = dStr; render(); };
-                    dayEl.innerHTML = `<div>${d.getDate()}</div> ${hasTask ? '<div class="dot"></div>' : ''}`;
-                    grid.appendChild(dayEl);
-                }
-                calDiv.appendChild(grid);
-                container.appendChild(calDiv);
-
-                // Tasks for selected date below calendar
-                const dayTasks = db.filter(t => t.date === selectedDate);
-                renderTaskList(container, dayTasks, "Focus for " + selectedDate);
-
+                renderCalendar(container);
+                const listDiv = document.createElement('div');
+                listDiv.id = 'dynamicTaskList';
+                container.appendChild(listDiv);
+                renderTaskListOnly();
             } else {
-                const filter = document.getElementById('mainFilter').value;
-                const filtered = db.filter(t => {
-                    if (filter === 'completed') return t.done;
-                    if (t.done) return false;
-                    if (filter === 'now') return t.urgency === 3;
-                    if (filter === 'dueSoon') {
-                        const diff = (new Date(t.date) - new Date()) / 86400000;
-                        return diff >= -1 && diff <= 5;
-                    }
-                    return true;
-                });
-                renderTaskList(container, filtered);
+                renderTaskListOnly();
             }
         }
 
-        function renderTaskList(container, list, title = "") {
-            if(title) container.innerHTML += `<h3 style="margin: 25px 0 15px; font-size:14px; color:var(--text-dim)">${title}</h3>`;
+        function renderCalendar(container) {
+            const calDiv = document.createElement('div');
+            calDiv.className = 'calendar-wrap';
+            const firstDay = new Date(displayYear, displayMonth, 1).getDay();
+            const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
+            const monthName = new Date(displayYear, displayMonth).toLocaleString('default', { month: 'long' });
+
+            calDiv.innerHTML = `
+                <div class="cal-header">
+                    <div class="cal-nav" onclick="changeMonth(-1)">←</div>
+                    <span>${monthName} ${displayYear}</span>
+                    <div class="cal-nav" onclick="changeMonth(1)">→</div>
+                </div>`;
             
-            const listWrap = document.createElement('div');
-            list.forEach(t => {
-                const card = document.createElement('div');
-                card.className = `task-card ${t.done ? 'done' : ''}`;
-                card.innerHTML = `
-                    <div class="main-row">
-                        <div class="urgency u${t.urgency}" onclick="cycleU(${t.id})">${'>'.repeat(t.urgency)}</div>
-                        <div style="flex:1"><input class="title-input" value="${t.title}" onchange="upd(${t.id},'title',this.value)"></div>
-                        <div style="cursor:pointer; opacity:0.6" onclick="toggleD(${t.id})">💬</div>
-                        <div style="cursor:pointer; color:var(--accent)" onclick="finish(${t.id})">●</div>
+            const grid = document.createElement('div');
+            grid.className = 'cal-grid';
+
+            for (let i = 0; i < firstDay; i++) {
+                grid.appendChild(Object.assign(document.createElement('div'), {className: 'cal-day empty'}));
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const hasTasks = db.some(t => datesMatch(t.date, dStr) && !t.done);
+                const dayEl = document.createElement('div');
+                dayEl.className = `cal-day ${datesMatch(dStr, selectedDate) ? 'active' : ''} ${datesMatch(dStr, getLocalISO()) ? 'today' : ''}`;
+                dayEl.onclick = (e) => selectCalendarDate(e, dStr);
+                dayEl.innerHTML = `<div>${d}</div> ${hasTasks ? '<div class="dot"></div>' : ''}`;
+                grid.appendChild(dayEl);
+            }
+            calDiv.appendChild(grid);
+            container.appendChild(calDiv);
+        }
+
+        function renderTaskListOnly() {
+            const query = document.getElementById('smartSearch').value.toLowerCase();
+            const filter = document.getElementById('mainFilter').value;
+            let target = currentTab === 'cal' ? document.getElementById('dynamicTaskList') : document.getElementById('contentArea');
+            
+            if (!target) return;
+            target.innerHTML = '';
+
+            let filtered = db.filter(t => t.title.toLowerCase().includes(query) || t.desc.toLowerCase().includes(query));
+
+            if (currentTab === 'cal') {
+                const dayTasks = filtered.filter(t => datesMatch(t.date, selectedDate) && !t.done);
+                renderTasksToElement(target, dayTasks, "Goals: " + selectedDate, false);
+            } else {
+                if (filter === 'completed') filtered = filtered.filter(t => t.done);
+                else {
+                    filtered = filtered.filter(t => !t.done);
+                    if (filter === 'now') filtered = filtered.filter(t => t.urgency === 3);
+                    else if (filter === 'dueSoon') {
+                        const today = new Date().setHours(0,0,0,0);
+                        filtered = filtered.filter(t => (new Date(t.date) - today) / 86400000 <= 3);
+                    }
+                }
+                renderTasksToElement(target, filtered, null, filter === 'byDate');
+            }
+        }
+
+        function renderTasksToElement(el, list, title, grouped) {
+            if (title) el.innerHTML += `<div class="group-title">${title}</div>`;
+            if (list.length === 0) { 
+                el.innerHTML += `<div style="text-align:center; padding:60px; color:var(--text-dim); font-size:13px">No tasks.</div>`; 
+                return; 
+            }
+            if (grouped) {
+                let groups = {};
+                list.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => { 
+                    if(!groups[t.date]) groups[t.date] = []; 
+                    groups[t.date].push(t); 
+                });
+                Object.keys(groups).forEach(date => {
+                    el.innerHTML += `<div class="group-title">${date}</div>`;
+                    groups[date].forEach(t => el.appendChild(createCard(t)));
+                });
+            } else {
+                list.forEach(t => el.appendChild(createCard(t)));
+            }
+        }
+
+        function createCard(t) {
+            const card = document.createElement('div');
+            card.className = `task-card ${t.done ? 'done' : ''}`;
+            const actionBtn = t.done 
+                ? `<div class="done-btn" onclick="toggleDone(${t.id})"></div>`
+                : `<div class="dot-btn" onclick="toggleDone(${t.id})">●</div>`;
+
+            card.innerHTML = `
+                <div class="main-row">
+                    <div class="urgency u${t.urgency}" onclick="cycleU(${t.id})">${'>'.repeat(t.urgency)}</div>
+                    <div style="flex:1"><input class="title-input" value="${t.title}" onchange="upd(${t.id},'title',this.value)" placeholder="Objective..."></div>
+                    <div style="cursor:pointer; opacity:0.6; font-size:14px" onclick="toggleD(${t.id})">💬</div>
+                    ${actionBtn}
+                </div>
+                <div class="desc-area ${t.open ? 'open' : ''}">
+                    <textarea style="width:100%; background:transparent; border:none; color:var(--text-dim); outline:none; resize:none; font-size:14px; min-height:60px" onchange="upd(${t.id},'desc',this.value)" placeholder="Details...">${t.desc}</textarea>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px">
+                        <input type="date" class="date-input" value="${t.date}" onchange="upd(${t.id},'date',this.value)">
+                        <div style="color:var(--danger); cursor:pointer; font-size:16px" onclick="delTask(${t.id})">🗑</div>
                     </div>
-                    <div class="desc-area ${t.open ? 'open' : ''}">
-                        <textarea placeholder="Description..." onchange="upd(${t.id},'desc',this.value)">${t.desc}</textarea>
-                        <input type="date" value="${t.date}" onchange="upd(${t.id},'date',this.value)" 
-                               style="background:transparent; color:var(--accent); border:none; font-size:12px; margin-top:10px">
-                    </div>
-                `;
-                listWrap.appendChild(card);
-            });
-            container.appendChild(listWrap);
+                </div>`;
+            return card;
         }
 
-        function cycleU(id) {
-            const t = db.find(x => x.id === id);
-            t.urgency = t.urgency >= 3 ? 1 : t.urgency + 1;
-            sort(); render(); sync();
-        }
+        function cycleU(id) { let t = db.find(x => x.id === id); t.urgency = t.urgency >= 3 ? 1 : t.urgency + 1; sync(); render(); }
+        function toggleDone(id) { let t = db.find(x => x.id === id); t.done = !t.done; sync(); render(); }
+        function delTask(id) { db = db.filter(x => x.id !== id); sync(); render(); }
+        function toggleD(id) { let t = db.find(x => x.id === id); t.open = !t.open; render(); }
+        function upd(id, f, v) { db.find(x => x.id === id)[f] = v; sync(); if(f==='date') render(); }
 
-        function finish(id) {
-            const t = db.find(x => x.id === id);
-            t.done = true;
-            render(); sync();
-        }
-
-        function toggleD(id) {
-            const t = db.find(x => x.id === id);
-            t.open = !t.open;
-            render();
-        }
-
-        function upd(id, f, v) {
-            db.find(x => x.id === id)[f] = v;
-            if(f === 'date') sort();
-            sync();
-            if(f === 'date') render();
-        }
-
-        function sort() {
-            db.sort((a,b) => (a.done - b.done) || (new Date(a.date) - new Date(b.date)) || (b.urgency - a.urgency));
-        }
-
-        sort(); render();
+        render();
     </script>
 </body>
 </html>
