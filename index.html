@@ -55,22 +55,22 @@
         .cal-nav { cursor: pointer; padding: 8px 12px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px; }
         .cal-day { aspect-ratio: 1; background: var(--surface); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); cursor: pointer; font-size: 13px; position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-        .cal-day:active { transform: scale(0.9); }
         .cal-day.empty { background: transparent; border: none; cursor: default; }
         .cal-day.active { border-color: var(--accent); background: var(--accent); color: white; transform: scale(1.05); z-index: 2; }
         .cal-day.today:not(.active) { color: var(--accent); font-weight: 800; border: 1.5px solid var(--accent); }
         .dot { position: absolute; bottom: 5px; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
-        .cal-day.active .dot { background: white; }
 
         #contentArea { padding: 0 20px 120px; }
         .group-title { margin: 20px 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent); font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
         
-        .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px; margin-bottom: 8px; backdrop-filter: var(--glass); animation: slideIn 0.2s ease; }
+        .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px; margin-bottom: 8px; backdrop-filter: var(--glass); animation: slideIn 0.2s ease; transition: opacity 0.3s; }
         .task-card.done { opacity: 0.4; }
         
         .main-row { display: flex; align-items: center; gap: 12px; }
         .urgency { font-family: monospace; font-weight: 900; cursor: pointer; min-width: 40px; font-size: 16px; text-align: center; }
-        .u1 { color: #32d74b; } .u2 { color: #ffd60a; } .u3 { color: #ff375f; }
+        .u1 { color: #32d74b; } 
+        .u2 { color: #ffd60a; } 
+        .u3 { color: #ff375f; text-shadow: 0 0 8px rgba(255, 55, 95, 0.3); }
 
         .title-input { background: transparent; border: none; color: var(--text-main); font-size: 16px; width: 100%; outline: none; }
         
@@ -242,19 +242,26 @@
 
             let filtered = db.filter(t => t.title.toLowerCase().includes(query) || t.desc.toLowerCase().includes(query));
 
+            if (filter === 'all' || filter === 'byDate') {
+                // REVERTED LOGIC: Show everything (Done and Undone), but sort professionally
+                filtered.sort((a, b) => {
+                    if (a.done !== b.done) return a.done ? 1 : -1; // Unfinished on top
+                    if (b.urgency !== a.urgency) return b.urgency - a.urgency; // Urgency 3 on top
+                    return new Date(a.date) - new Date(b.date); // Date order
+                });
+            } else if (filter === 'now') {
+                filtered = filtered.filter(t => !t.done && t.urgency === 3);
+            } else if (filter === 'dueSoon') {
+                const today = new Date().setHours(0,0,0,0);
+                filtered = filtered.filter(t => !t.done && (new Date(t.date) - today) / 86400000 <= 3);
+            } else if (filter === 'completed') {
+                filtered = filtered.filter(t => t.done);
+            }
+
             if (currentTab === 'cal') {
-                const dayTasks = filtered.filter(t => t.date === selectedDate && !t.done);
+                const dayTasks = filtered.filter(t => t.date === selectedDate);
                 renderTasksToElement(target, dayTasks, "Goals: " + selectedDate, false);
             } else {
-                if (filter === 'completed') filtered = filtered.filter(t => t.done);
-                else {
-                    filtered = filtered.filter(t => !t.done);
-                    if (filter === 'now') filtered = filtered.filter(t => t.urgency === 3);
-                    else if (filter === 'dueSoon') {
-                        const today = new Date().setHours(0,0,0,0);
-                        filtered = filtered.filter(t => (new Date(t.date) - today) / 86400000 <= 3);
-                    }
-                }
                 renderTasksToElement(target, filtered, null, filter === 'byDate');
             }
         }
@@ -262,16 +269,16 @@
         function renderTasksToElement(el, list, title, grouped) {
             if (title) el.innerHTML += `<div class="group-title">${title}</div>`;
             if (list.length === 0) { 
-                el.innerHTML += `<div style="text-align:center; padding:60px; color:var(--text-dim); font-size:13px">No tasks.</div>`; 
+                el.innerHTML += `<div style="text-align:center; padding:60px; color:var(--text-dim); font-size:13px">No tasks found.</div>`; 
                 return; 
             }
             if (grouped) {
                 let groups = {};
-                list.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => { 
+                list.forEach(t => { 
                     if(!groups[t.date]) groups[t.date] = []; 
                     groups[t.date].push(t); 
                 });
-                Object.keys(groups).forEach(date => {
+                Object.keys(groups).sort().forEach(date => {
                     el.innerHTML += `<div class="group-title">${date}</div>`;
                     groups[date].forEach(t => el.appendChild(createCard(t)));
                 });
@@ -304,11 +311,30 @@
             return card;
         }
 
-        function cycleU(id) { let t = db.find(x => x.id === id); t.urgency = t.urgency >= 3 ? 1 : t.urgency + 1; sync(); render(); }
-        function toggleDone(id) { let t = db.find(x => x.id === id); t.done = !t.done; sync(); render(); }
-        function delTask(id) { db = db.filter(x => x.id !== id); sync(); render(); }
-        function toggleD(id) { let t = db.find(x => x.id === id); t.open = !t.open; render(); }
-        function upd(id, f, v) { db.find(x => x.id === id)[f] = v; sync(); if(f==='date') render(); }
+        function cycleU(id) { 
+            let t = db.find(x => x.id === id); 
+            t.urgency = t.urgency >= 3 ? 1 : t.urgency + 1; 
+            sync(); render(); 
+        }
+        function toggleDone(id) { 
+            let t = db.find(x => x.id === id); 
+            t.done = !t.done; 
+            sync(); render(); 
+        }
+        function delTask(id) { 
+            db = db.filter(x => x.id !== id); 
+            sync(); render(); 
+        }
+        function toggleD(id) { 
+            let t = db.find(x => x.id === id); 
+            t.open = !t.open; 
+            render(); 
+        }
+        function upd(id, f, v) { 
+            db.find(x => x.id === id)[f] = v; 
+            sync(); 
+            if(f==='date') render(); 
+        }
 
         render();
     </script>
