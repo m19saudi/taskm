@@ -233,38 +233,48 @@
         }
 
         function renderTaskListOnly() {
-            const query = document.getElementById('smartSearch').value.toLowerCase();
-            const filter = document.getElementById('mainFilter').value;
-            let target = currentTab === 'cal' ? document.getElementById('dynamicTaskList') : document.getElementById('contentArea');
-            
-            if (!target) return;
-            target.innerHTML = '';
+    const query = document.getElementById('smartSearch').value.toLowerCase();
+    const filter = document.getElementById('mainFilter').value;
+    let target = currentTab === 'cal' ? document.getElementById('dynamicTaskList') : document.getElementById('contentArea');
+    
+    if (!target) return;
+    target.innerHTML = '';
 
-            let filtered = db.filter(t => t.title.toLowerCase().includes(query) || t.desc.toLowerCase().includes(query));
+    // 1. Filter by Search Query first
+    let filtered = db.filter(t => t.title.toLowerCase().includes(query) || t.desc.toLowerCase().includes(query));
 
-            if (filter === 'all' || filter === 'byDate') {
-                // REVERTED LOGIC: Show everything (Done and Undone), but sort professionally
-                filtered.sort((a, b) => {
-                    if (a.done !== b.done) return a.done ? 1 : -1; // Unfinished on top
-                    if (b.urgency !== a.urgency) return b.urgency - a.urgency; // Urgency 3 on top
-                    return new Date(a.date) - new Date(b.date); // Date order
-                });
-            } else if (filter === 'now') {
-                filtered = filtered.filter(t => !t.done && t.urgency === 3);
-            } else if (filter === 'dueSoon') {
-                const today = new Date().setHours(0,0,0,0);
-                filtered = filtered.filter(t => !t.done && (new Date(t.date) - today) / 86400000 <= 3);
-            } else if (filter === 'completed') {
-                filtered = filtered.filter(t => t.done);
-            }
+    // 2. Handle the "Archive" vs "Active" logic
+    if (filter === 'completed') {
+        // Show ONLY completed tasks in the Archive
+        filtered = filtered.filter(t => t.done);
+    } else {
+        // For ALL other views, hide completed tasks to keep it clean
+        filtered = filtered.filter(t => !t.done);
 
-            if (currentTab === 'cal') {
-                const dayTasks = filtered.filter(t => t.date === selectedDate);
-                renderTasksToElement(target, dayTasks, "Goals: " + selectedDate, false);
-            } else {
-                renderTasksToElement(target, filtered, null, filter === 'byDate');
-            }
+        // Professional Sorting for Active Tasks
+        filtered.sort((a, b) => {
+            if (b.urgency !== a.urgency) return b.urgency - a.urgency; // Urgency 3 at the top
+            return new Date(a.date) - new Date(b.date); // Then sort by Date
+        });
+
+        // Specific sub-filters
+        if (filter === 'now') {
+            filtered = filtered.filter(t => t.urgency === 3);
+        } else if (filter === 'dueSoon') {
+            const today = new Date().setHours(0,0,0,0);
+            filtered = filtered.filter(t => (new Date(t.date) - today) / 86400000 <= 3);
         }
+    }
+
+    // 3. Render to the correct Tab
+    if (currentTab === 'cal') {
+        // Even in Calendar, only show the tasks for the selected date that aren't done
+        const dayTasks = filtered.filter(t => t.date === selectedDate);
+        renderTasksToElement(target, dayTasks, "Goals: " + selectedDate, false);
+    } else {
+        renderTasksToElement(target, filtered, null, filter === 'byDate');
+    }
+}
 
         function renderTasksToElement(el, list, title, grouped) {
             if (title) el.innerHTML += `<div class="group-title">${title}</div>`;
