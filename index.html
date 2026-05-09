@@ -49,6 +49,7 @@
         .search-overlay.active { display: flex; }
         .search-input { background: transparent; border: none; color: var(--text-main); width: 100%; outline: none; font-size: 14px; }
 
+        /* CALENDAR */
         .calendar-wrap { padding: 0 20px; }
         .cal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-weight: 600; font-size: 16px; }
         .cal-nav { cursor: pointer; padding: 8px 12px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
@@ -61,7 +62,7 @@
         .dot { position: absolute; bottom: 5px; width: 4px; height: 4px; background: var(--accent); border-radius: 50%; }
         .cal-day.active .dot { background: white; }
 
-        #contentArea { padding: 0 20px 120px; min-height: 200px; }
+        #contentArea { padding: 0 20px 120px; }
         .group-title { margin: 20px 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--accent); font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
         
         .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px; margin-bottom: 8px; backdrop-filter: var(--glass); animation: slideIn 0.2s ease; }
@@ -94,7 +95,7 @@
             <select id="mainFilter" class="mode-btn" onchange="render()">
                 <option value="all">All Focus</option>
                 <option value="byDate">By Date</option>
-                <option value="now">Now</option>
+                <option value="now">Priority: Now</option>
                 <option value="dueSoon">Due Soon</option>
                 <option value="completed">Archive</option>
             </select>
@@ -130,11 +131,6 @@
             const m = String(date.getMonth() + 1).padStart(2, '0');
             const d = String(date.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
-        };
-
-        const datesMatch = (d1, d2) => {
-            if(!d1 || !d2) return false;
-            return d1.toString() === d2.toString();
         };
 
         let selectedDate = getLocalISO();
@@ -174,16 +170,11 @@
             render();
         }
 
-        // IMPROVED: Update visual only for current selected day
         function selectCalendarDate(e, dStr) {
             e.preventDefault();
             selectedDate = dStr;
-            
-            // Remove 'active' class from all days and add to clicked one
             document.querySelectorAll('.cal-day').forEach(el => el.classList.remove('active'));
             e.currentTarget.classList.add('active');
-
-            // Refresh only the tasks below, not the whole calendar
             renderTaskListOnly();
         }
 
@@ -230,9 +221,9 @@
 
             for (let d = 1; d <= daysInMonth; d++) {
                 const dStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const hasTasks = db.some(t => datesMatch(t.date, dStr) && !t.done);
+                const hasTasks = db.some(t => t.date === dStr && !t.done);
                 const dayEl = document.createElement('div');
-                dayEl.className = `cal-day ${datesMatch(dStr, selectedDate) ? 'active' : ''} ${datesMatch(dStr, getLocalISO()) ? 'today' : ''}`;
+                dayEl.className = `cal-day ${dStr === selectedDate ? 'active' : ''} ${dStr === getLocalISO() ? 'today' : ''}`;
                 dayEl.onclick = (e) => selectCalendarDate(e, dStr);
                 dayEl.innerHTML = `<div>${d}</div> ${hasTasks ? '<div class="dot"></div>' : ''}`;
                 grid.appendChild(dayEl);
@@ -252,7 +243,7 @@
             let filtered = db.filter(t => t.title.toLowerCase().includes(query) || t.desc.toLowerCase().includes(query));
 
             if (currentTab === 'cal') {
-                const dayTasks = filtered.filter(t => datesMatch(t.date, selectedDate) && !t.done);
+                const dayTasks = filtered.filter(t => t.date === selectedDate && !t.done);
                 renderTasksToElement(target, dayTasks, "Goals: " + selectedDate, false);
             } else {
                 if (filter === 'completed') filtered = filtered.filter(t => t.done);
